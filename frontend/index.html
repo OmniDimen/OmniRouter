@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>OmniRouter</title>
+<style>
+:root {
+  --bg: #f2f2f7;
+  --card: #ffffff;
+  --card-secondary: #f9f9fb;
+  --text: #1c1c1e;
+  --text2: #8e8e93;
+  --text3: #aeaeb2;
+  --sep: rgba(60,60,67,.12);
+  --primary: #007aff;
+  --primary-bg: rgba(0,122,255,.08);
+  --danger: #ff3b30;
+  --danger-bg: rgba(255,59,48,.08);
+  --success: #34c759;
+  --success-bg: rgba(52,199,89,.08);
+  --warning: #ff9f0a;
+  --warning-bg: rgba(255,159,10,.08);
+  --orange: #ff9500;
+  --purple: #af52de;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,.08);
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif;
+}
+[data-theme="dark"] {
+  --bg: #000000;
+  --card: #1c1c1e;
+  --card-secondary: #2c2c2e;
+  --text: #f5f5f7;
+  --text2: #98989d;
+  --text3: #636366;
+  --sep: rgba(255,255,255,.08);
+  --shadow: 0 1px 3px rgba(0,0,0,.2);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,.3);
+  --primary-bg: rgba(0,122,255,.15);
+  --danger-bg: rgba(255,59,48,.15);
+  --success-bg: rgba(52,199,89,.15);
+  --warning-bg: rgba(255,159,10,.15);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+  display: flex;
+  line-height: 1.47;
+  letter-spacing: -0.01em;
+}
+
+/* ===== SIDEBAR (Desktop) ===== */
+.sidebar {
+  width: 260px; flex-shrink: 0; background: var(--card);
+  border-right: 1px solid var(--sep); padding: 24px 0;
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+.sidebar-brand { padding: 0 20px 24px; }
+.sidebar-brand h1 {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--primary), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.sidebar-brand p { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.sidebar nav { flex: 1; padding: 0 12px; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 10px; color: var(--text2); font-size: 15px; font-weight: 500;
+  cursor: pointer; transition: all .2s; text-decoration: none; margin-bottom: 2px;
+}
+.nav-item:hover { background: var(--primary-bg); color: var(--primary); }
+.nav-item.active { background: var(--primary-bg); color: var(--primary); }
+.nav-icon {
+  width: 30px; height: 30px; border-radius: 7px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px; color: #fff; flex-shrink: 0;
+}
+.sidebar-footer {
+  padding: 16px 16px 0; border-top: 1px solid var(--sep); margin-top: auto;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.pill {
+  padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  border: 1px solid var(--sep); background: var(--card-secondary);
+  color: var(--text2); cursor: pointer; transition: all .15s;
+}
+.pill:hover, .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ===== MOBILE NAV ===== */
+.mobile-header {
+  display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 90;
+  background: var(--card); border-bottom: 1px solid var(--sep);
+  padding: 12px 16px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.mobile-header h1 {
+  font-size: 17px; font-weight: 600; text-align: center;
+}
+.tab-bar {
+  display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+  background: var(--card); border-top: 1px solid var(--sep);
+  padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+}
+.tab-bar-inner {
+  display: flex; justify-content: space-around; max-width: 500px; margin: 0 auto;
+}
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 4px 8px; font-size: 10px; color: var(--text3);
+  cursor: pointer; transition: color .15s; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab-item.active { color: var(--primary); }
+.tab-item svg { width: 24px; height: 24px; }
+
+/* ===== MAIN ===== */
+.main-wrap {
+  flex: 1; min-width: 0; overflow-y: auto;
+  padding: 32px; max-width: 960px;
+}
+.page-title { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 24px; }
+
+/* ===== iOS GROUPED CARD ===== */
+.group { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden; }
+.group-header {
+  padding: 20px 20px 0; font-size: 13px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.02em;
+}
+.group-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; min-height: 48px; gap: 12px;
+}
+.group-row + .group-row { border-top: 1px solid var(--sep); margin-left: 20px; padding-left: 0; }
+.group-label { font-size: 15px; flex-shrink: 0; }
+.group-value { font-size: 15px; color: var(--text2); text-align: right; min-width: 0; word-break: break-all; }
+.group-value input, .group-value select, .group-value textarea {
+  text-align: right; border: none; background: none; color: var(--text2);
+  font-size: 15px; font-family: var(--font); outline: none; width: 100%;
+  padding: 0;
+}
+.group-value input::placeholder { color: var(--text3); }
+.group-value input:focus, .group-value select:focus { color: var(--primary); }
+.group-input-full { width: 100%; }
+.group-input-full input, .group-input-full textarea {
+  text-align: left; width: 100%; background: var(--card-secondary);
+  border: 1px solid var(--sep); border-radius: 10px; padding: 10px 14px;
+  color: var(--text); font-size: 15px; font-family: var(--font); outline: none;
+}
+.group-input-full input:focus, .group-input-full textarea:focus { border-color: var(--primary); }
+.group-input-full select {
+  width: 100%; background: var(--card-secondary); border: 1px solid var(--sep);
+  border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 15px;
+  font-family: var(--font); outline: none; appearance: auto;
+}
+
+/* ===== iOS TOGGLE ===== */
+.ios-toggle { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+.ios-toggle input { opacity: 0; width: 0; height: 0; }
+.ios-toggle .track {
+  position: absolute; inset: 0; background: #e9e9eb; border-radius: 16px;
+  transition: background .25s;
+}
+[data-theme="dark"] .ios-toggle .track { background: #39393d; }
+.ios-toggle .knob {
+  position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+  background: #fff; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,.15);
+  transition: transform .25s;
+}
+.ios-toggle input:checked ~ .track { background: var(--success); }
+.ios-toggle input:checked ~ .knob { transform: translateX(20px); }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 20px; border-radius: var(--radius-sm); border: none;
+  font-size: 15px; font-weight: 600; font-family: var(--font);
+  cursor: pointer; transition: all .15s; letter-spacing: -0.01em;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { opacity: .88; }
+.btn-tint { background: var(--primary-bg); color: var(--primary); }
+.btn-tint:hover { background: rgba(0,122,255,.15); }
+.btn-danger-tint { background: var(--danger-bg); color: var(--danger); }
+.btn-danger-tint:hover { background: rgba(255,59,48,.2); }
+.btn-ghost {
+  background: var(--card-secondary); color: var(--text2); border: 1px solid var(--sep);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--text3); }
+.btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 10px; }
+.btn-block { width: 100%; }
+.btn-round { border-radius: 50px; }
+
+/* ===== BADGE ===== */
+.tag {
+  display: inline-flex; align-items: center; padding: 3px 10px;
+  border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.tag-blue { background: var(--primary-bg); color: var(--primary); }
+.tag-green { background: var(--success-bg); color: var(--success); }
+.tag-red { background: var(--danger-bg); color: var(--danger); }
+.tag-orange { background: var(--warning-bg); color: var(--warning); }
+
+/* ===== STATS ===== */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-item {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 18px 16px; text-align: center;
+}
+.stat-num { font-size: 32px; font-weight: 700; letter-spacing: -0.04em; }
+.stat-label { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+/* ===== TABLE (card-style list) ===== */
+.list-item {
+  display: flex; align-items: center; padding: 14px 20px; gap: 14px;
+  transition: background .1s;
+}
+.list-item + .list-item { border-top: 1px solid var(--sep); }
+.list-item:active { background: var(--card-secondary); }
+.list-info { flex: 1; min-width: 0; }
+.list-title { font-size: 15px; font-weight: 600; }
+.list-sub { font-size: 13px; color: var(--text2); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; padding: 16px; backdrop-filter: blur(4px);
+  animation: modalFadeIn .2s;
+}
+.modal-sheet {
+  background: var(--card); border-radius: 20px; width: 100%; max-width: 480px;
+  max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg);
+  animation: modalSlideUp .3s cubic-bezier(.32,.72,0,1);
+}
+.modal-bar { padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--sep); }
+.modal-bar h3 { font-size: 17px; font-weight: 600; }
+.modal-bar button { background: none; border: none; color: var(--primary); font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+.modal-body { padding: 16px 20px 24px; }
+.modal-body .group { box-shadow: none; border: 1px solid var(--sep); }
+
+@keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ===== TOAST ===== */
+.toast-wrap {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 300; pointer-events: none;
+}
+.toast-msg {
+  background: var(--text); color: var(--bg); padding: 12px 24px;
+  border-radius: 50px; font-size: 14px; font-weight: 600;
+  box-shadow: var(--shadow-lg); animation: toastIn .3s cubic-bezier(.32,.72,0,1);
+  pointer-events: auto; text-align: center;
+}
+@keyframes toastIn { from { opacity: 0; transform: scale(.9) translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ===== PAGINATION ===== */
+.pager { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px 0; }
+.pager span { font-size: 14px; color: var(--text2); }
+.pager button { background: none; border: none; color: var(--primary); font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--font); }
+.pager button:disabled { color: var(--text3); cursor: default; }
+
+/* ===== FETCH MODELS ===== */
+.fetch-list { max-height: 320px; overflow-y: auto; }
+.fetch-row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 0;
+  border-bottom: 1px solid var(--sep); font-size: 14px;
+}
+.fetch-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+
+/* ===== HELPERS ===== */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.wrap { flex-wrap: wrap; }
+.mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.text-sm { font-size: 13px; }
+.text-muted { color: var(--text2); }
+.text-center { text-align: center; }
+.w-full { width: 100%; }
+.font-mono { font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; font-size: 13px; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .mobile-header { display: block; }
+  .tab-bar { display: block; }
+  .main-wrap { padding: 68px 16px 90px; max-width: 100%; }
+  .page-title { font-size: 24px; margin-bottom: 18px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-num { font-size: 26px; }
+  .list-item { padding: 12px 16px; }
+  .group-row { padding: 12px 16px; }
+  .group-row + .group-row { margin-left: 16px; padding-left: 0; }
+  .modal-sheet { border-radius: 20px 20px 0 0; max-width: 100%; align-self: flex-end; max-height: 90vh; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- Desktop Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h1>OmniRouter</h1>
+    <p>智能模型路由</p>
+  </div>
+  <nav id="sidebar-nav"></nav>
+  <div class="sidebar-footer">
+    <span class="pill" id="p-light" onclick="setTheme('light')">浅色</span>
+    <span class="pill" id="p-dark" onclick="setTheme('dark')">深色</span>
+    <span class="pill" id="p-system" onclick="setTheme('system')">跟随系统</span>
+    <span class="pill" id="p-lang" onclick="toggleLang()">EN</span>
+  </div>
+</aside>
+
+<!-- Mobile Header -->
+<header class="mobile-header" id="mobile-header"><h1 id="mobile-title">OmniRouter</h1></header>
+
+<!-- Main -->
+<div class="main-wrap" id="app"></div>
+
+<!-- Mobile Tab Bar -->
+<nav class="tab-bar"><div class="tab-bar-inner" id="tab-bar"></div></nav>
+
+<div id="modal-root"></div>
+<div class="toast-wrap" id="toast-root"></div>
+
+<script>
+// ========== i18n ==========
+const L = {
+zh: {
+  dashboard:'仪表盘', providers:'服务商', models:'模型', groups:'分组', settings:'设置', logs:'日志',
+  loading:'加载中…', noData:'暂无数据', add:'添加', edit:'编辑', del:'删除', save:'保存',
+  cancel:'取消', confirm_del:'确定要删除吗？',
+  name:'名称', enabled:'启用',
+  // provider
+  base_url:'接口地址', api_key:'密钥', keep_key:'留空则保持不变',
+  model_count:'模型数量', status:'状态', actions:'操作',
+  active:'正常', disabled:'已停用',
+  fetch_models:'拉取模型', import_sel:'导入所选',
+  select_all:'全选', fetching:'正在获取…', already_added:'已添加',
+  // model
+  model_id:'模型 ID', display_name:'显示名称', vision:'视觉能力',
+  auto_disabled:'已自动禁用', recover_at:'恢复时间',
+  test:'测试', testing:'正在测试…', test_ok:'连接正常', test_fail:'连接失败',
+  // group
+  desc:'备注', default_tag:'默认', polling:'轮询方式',
+  seq:'顺序', rand:'随机', weight:'权重',
+  add_model:'添加模型', remove:'移除',
+  // settings
+  smart_routing:'智能路由', route_model:'路由模型',
+  ctx_turns:'上下文轮数', timeout:'超时(秒)',
+  timeout_action:'超时策略', act_error:'报错', act_retry:'重试', act_next:'换下一个',
+  fail_threshold:'失败阈值(次)', disable_dur:'禁用时长(分钟)',
+  pin_consume:'指定模型消耗轮询次数',
+  api_keys:'API 密钥', add_key:'添加密钥', save_settings:'保存设置', none_:'无',
+  // logs
+  all_levels:'全部级别', all_events:'全部事件',
+  time:'时间', level:'级别', event:'事件', message:'内容',
+  prev:'上一页', next_p:'下一页',
+  // dashboard
+  recent_errors:'最近错误', auto_dis_count:'自动禁用中',
+  routing_status:'路由状态', on:'已开启', off:'已关闭',
+  conn_info:'接口信息', api_url:'接口地址', copy:'复制', copied:'已复制',
+  // toast
+  created:'已创建', updated:'已更新', deleted:'已删除',
+  saved:'已保存', removed:'已移除', added:'已添加',
+  imported:'导入完成',
+},
+en: {
+  dashboard:'Dashboard', providers:'Providers', models:'Models', groups:'Groups', settings:'Settings', logs:'Logs',
+  loading:'Loading…', noData:'No data', add:'Add', edit:'Edit', del:'Delete', save:'Save',
+  cancel:'Cancel', confirm_del:'Are you sure?',
+  name:'Name', enabled:'Enabled',
+  base_url:'Base URL', api_key:'API Key', keep_key:'Leave empty to keep current',
+  model_count:'Models', status:'Status', actions:'Actions',
+  active:'Active', disabled:'Disabled',
+  fetch_models:'Fetch Models', import_sel:'Import Selected',
+  select_all:'Select All', fetching:'Fetching…', already_added:'Added',
+  model_id:'Model ID', display_name:'Display Name', vision:'Vision',
+  auto_disabled:'Auto-disabled', recover_at:'Recovers at',
+  test:'Test', testing:'Testing…', test_ok:'Reachable', test_fail:'Failed',
+  desc:'Description', default_tag:'Default', polling:'Polling',
+  seq:'Sequential', rand:'Random', weight:'Weight',
+  add_model:'Add Model', remove:'Remove',
+  smart_routing:'Smart Routing', route_model:'Routing Model',
+  ctx_turns:'Context Turns', timeout:'Timeout (s)',
+  timeout_action:'Timeout Action', act_error:'Error', act_retry:'Retry', act_next:'Next Model',
+  fail_threshold:'Failure Threshold', disable_dur:'Disable Duration (min)',
+  pin_consume:'Pin consumes polling turn',
+  api_keys:'API Keys', add_key:'Add Key', save_settings:'Save Settings', none_:'None',
+  all_levels:'All Levels', all_events:'All Events',
+  time:'Time', level:'Level', event:'Event', message:'Message',
+  prev:'Prev', next_p:'Next',
+  recent_errors:'Recent Errors', auto_dis_count:'Auto-disabled',
+  routing_status:'Routing', on:'ON', off:'OFF',
+  conn_info:'Connection', api_url:'API URL', copy:'Copy', copied:'Copied',
+  created:'Created', updated:'Updated', deleted:'Deleted',
+  saved:'Saved', removed:'Removed', added:'Added',
+  imported:'Imported',
+}
+};
+let lang = localStorage.getItem('or_lang')||'zh';
+const t = k => L[lang]?.[k]||L.en[k]||k;
+function toggleLang() {
+  lang = lang==='zh'?'en':'zh';
+  localStorage.setItem('or_lang',lang);
+  buildNav(); navigate(cur);
+  document.getElementById('p-lang').textContent = lang==='zh'?'EN':'中文';
+}
+
+// ========== Theme ==========
+let themeMode = localStorage.getItem('or_theme')||'system';
+function setTheme(m) { themeMode=m; localStorage.setItem('or_theme',m); applyTheme(); }
+function applyTheme() {
+  let r = themeMode;
+  if(r==='system') r = matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+  document.documentElement.setAttribute('data-theme',r);
+  ['light','dark','system'].forEach(x => document.getElementById('p-'+x)?.classList.toggle('active',x===themeMode));
+}
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{ if(themeMode==='system') applyTheme(); });
+
+// ========== API ==========
+function hdr() { return {'Content-Type':'application/json'}; }
+async function api(m,p,b) {
+  const o={method:m,headers:hdr()}; if(b) o.body=JSON.stringify(b);
+  const r=await fetch(location.origin+p,o);
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.detail||e.error?.message||'HTTP '+r.status);}
+  return r.json();
+}
+
+// ========== Helpers ==========
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent; btn.textContent=t('copied'); btn.disabled=true;
+    setTimeout(()=>{btn.textContent=orig;btn.disabled=false;},1500);
+  });
+}
+function toast(msg) {
+  const el=document.createElement('div'); el.className='toast-msg'; el.textContent=msg;
+  document.getElementById('toast-root').appendChild(el);
+  setTimeout(()=>el.remove(),2500);
+}
+function showModal(html) {
+  document.getElementById('modal-root').innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-sheet">${html}</div></div>`;
+}
+function closeModal(){ document.getElementById('modal-root').innerHTML=''; }
+function esc(s){ if(s==null)return''; const d=document.createElement('div'); d.textContent=String(s); return d.innerHTML; }
+
+// ========== Nav ==========
+const pages=[
+  {id:'dashboard',icon:'#007aff',svg:'<path d="M4 13h6a1 1 0 001-1V4a1 1 0 00-1-1H4a1 1 0 00-1 1v8a1 1 0 001 1zm0 8h6a1 1 0 001-1v-4a1 1 0 00-1-1H4a1 1 0 00-1 1v4a1 1 0 001 1zm10 0h6a1 1 0 001-1v-8a1 1 0 00-1-1h-6a1 1 0 00-1 1v8a1 1 0 001 1zm0-18v4a1 1 0 001 1h6a1 1 0 001-1V3a1 1 0 00-1-1h-6a1 1 0 00-1 1z"/>'},
+  {id:'providers',icon:'#ff9500',svg:'<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>'},
+  {id:'models',icon:'#af52de',svg:'<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>'},
+  {id:'groups',icon:'#34c759',svg:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>'},
+  {id:'settings',icon:'#8e8e93',svg:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>'},
+  {id:'logs',icon:'#ff3b30',svg:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>'},
+];
+let cur='dashboard';
+function svgIcon(p,fill){ return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p.svg}</svg>`; }
+function buildNav(){
+  document.getElementById('sidebar-nav').innerHTML=pages.map(p=>`<a class="nav-item${p.id===cur?' active':''}" onclick="navigate('${p.id}')"><span class="nav-icon" style="background:${p.icon}">${svgIcon(p)}</span>${t(p.id)}</a>`).join('');
+  document.getElementById('tab-bar').innerHTML=pages.map(p=>`<a class="tab-item${p.id===cur?' active':''}" onclick="navigate('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p.svg}</svg><span>${t(p.id)}</span></a>`).join('');
+  document.getElementById('p-lang').textContent=lang==='zh'?'EN':'中文';
+  document.getElementById('mobile-title').textContent=t(cur);
+}
+function navigate(id){ cur=id; buildNav(); window['page_'+id](); }
+
+// ========== DASHBOARD ==========
+async function page_dashboard(){
+  const a=document.getElementById('app');
+  a.innerHTML=`<div class="page-title">${t('dashboard')}</div><p class="text-muted">${t('loading')}</p>`;
+  try{
+    const [pv,md,gp,st,lg]=await Promise.all([api('GET','/api/providers'),api('GET','/api/models'),api('GET','/api/groups'),api('GET','/api/settings'),api('GET','/api/logs?page_size=5')]);
+    const dis=md.filter(m=>m.auto_disabled).length;
+    const apiUrl=st.api_url||location.origin+'/v1';
+    const firstKey=st.router_api_keys.length?st.router_api_keys[0]:'';
+    a.innerHTML=`<div class="page-title">${t('dashboard')}</div>
+      <div class="group"><div class="group-header">${t('conn_info')}</div>
+        <div class="group-row"><span class="group-label">${t('api_url')}</span><span class="group-value font-mono" style="flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;user-select:all">${esc(apiUrl)}</span><button class="btn btn-sm btn-tint" style="margin-left:8px" onclick="copyText('${apiUrl}',this)">${t('copy')}</button></div>
+        ${firstKey?`<div class="group-row"><span class="group-label">API Key</span><span class="group-value font-mono" style="flex:1;text-align:right;overflow:hidden;text-overflow:ellipsis;user-select:all">${esc(firstKey)}</span><button class="btn btn-sm btn-tint" style="margin-left:8px" onclick="copyText('${esc(firstKey)}',this)">${t('copy')}</button></div>`:''}
+      </div>
+      <div class="stat-grid">
+        <div class="stat-item"><div class="stat-num" style="color:var(--orange)">${pv.length}</div><div class="stat-label">${t('providers')}</div></div>
+        <div class="stat-item"><div class="stat-num" style="color:var(--purple)">${md.length}</div><div class="stat-label">${t('models')}</div></div>
+        <div class="stat-item"><div class="stat-num" style="color:var(--success)">${gp.length}</div><div class="stat-label">${t('groups')}</div></div>
+        <div class="stat-item"><div class="stat-num" style="color:${dis?'var(--danger)':'var(--text3)'}">${dis}</div><div class="stat-label">${t('auto_dis_count')}</div></div>
+      </div>
+      <div class="group">
+        <div class="group-row"><span class="group-label">${t('routing_status')}</span><span class="tag ${st.smart_routing_enabled?'tag-green':'tag-blue'}">${st.smart_routing_enabled?t('on'):t('off')}</span></div>
+        <div class="group-row"><span class="group-label">${t('timeout')}</span><span class="group-value">${st.timeout_s}s · ${st.timeout_action}</span></div>
+        <div class="group-row"><span class="group-label">${t('fail_threshold')}</span><span class="group-value">${st.auto_disable_threshold} ${t('fail_threshold').includes('次')?'':'fails'} / ${st.auto_disable_duration_min}min</span></div>
+      </div>
+      ${lg.items.length?`<div class="page-title" style="font-size:20px;margin-top:8px">${t('recent_errors')}</div><div class="group">${lg.items.map(l=>`<div class="list-item"><div class="list-info"><div class="list-title">${esc(l.event)}</div><div class="list-sub">${esc(l.message)}</div></div><span class="text-sm text-muted">${new Date(l.timestamp).toLocaleTimeString()}</span></div>`).join('')}</div>`:''}`;
+  }catch(e){a.innerHTML=`<div class="page-title">${t('dashboard')}</div><p class="text-muted">${esc(e.message)}</p>`;}
+}
+
+// ========== PROVIDERS ==========
+async function page_providers(){
+  const a=document.getElementById('app');
+  a.innerHTML=`<div class="page-title">${t('providers')}</div><p class="text-muted">${t('loading')}</p>`;
+  try{
+    const d=await api('GET','/api/providers');
+    a.innerHTML=`<div class="flex items-center justify-between mb-4"><div class="page-title" style="margin:0">${t('providers')}</div><button class="btn btn-primary btn-round btn-sm" onclick="showProviderForm()">+ ${t('add')}</button></div>
+      <div class="group">${d.length?d.map(p=>`<div class="list-item"><div class="list-info"><div class="list-title">${esc(p.name)}</div><div class="list-sub">${esc(p.base_url)}</div></div><div class="list-right"><span class="tag ${p.enabled?'tag-green':'tag-red'}">${p.enabled?t('active'):t('disabled')}</span><span class="text-sm text-muted">${p.model_count} ${t('models')}</span></div></div>`).join(''):`<div class="list-item text-center w-full"><span class="text-muted">${t('noData')}</span></div>`}</div>
+      ${d.length?`<div class="flex gap-2 wrap mt-2">${d.map(p=>`<button class="btn btn-sm btn-tint" onclick="showProviderActions(${p.id},'${esc(p.name)}')">${esc(p.name)}</button>`).join('')}</div>`:''}`;
+  }catch(e){a.innerHTML=`<div class="page-title">${t('providers')}</div><p class="text-muted">${esc(e.message)}</p>`;}
+}
+function showProviderActions(id,name){
+  showModal(`<div class="modal-bar"><h3>${esc(name)}</h3><button onclick="closeModal()">${t('cancel')}</button></div>
+    <div class="modal-body"><div class="group">
+      <div class="list-item" style="cursor:pointer" onclick="closeModal();showProviderForm(${id})"><span class="group-label">${t('edit')}</span></div>
+      <div class="list-item" style="cursor:pointer" onclick="closeModal();fetchRemoteModels(${id})"><span class="group-label">${t('fetch_models')}</span></div>
+      <div class="list-item" style="cursor:pointer;color:var(--danger)" onclick="closeModal();deleteProvider(${id})"><span class="group-label">${t('del')}</span></div>
+    </div></div>`);
+}
+async function showProviderForm(id){
+  let p={name:'',base_url:'',api_key:'',enabled:true};
+  if(id){const all=await api('GET','/api/providers');p=all.find(x=>x.id===id)||p;}
+  showModal(`<div class="modal-bar"><h3>${id?t('edit'):t('add')}${t('providers')}</h3><button onclick="saveProvider(${id||'null'})">${t('save')}</button></div>
+    <div class="modal-body"><div class="group">
+      <div class="group-row"><span class="group-label">${t('name')}</span><div class="group-value"><input id="f-name" value="${esc(p.name)}" placeholder="${t('name')}"></div></div>
+      <div class="group-row"><span class="group-label">${t('base_url')}</span><div class="group-value"><input id="f-url" value="${esc(p.base_url)}" placeholder="https://api.openai.com/v1"></div></div>
+      <div class="group-row"><span class="group-label">${t('api_key')}</span><div class="group-value"><input id="f-key" type="password" placeholder="${id?t('keep_key'):'sk-xxx'}"></div></div>
+      <div class="group-row"><span class="group-label">${t('enabled')}</span><label class="ios-toggle"><input type="checkbox" id="f-enabled" ${p.enabled?'checked':''}><span class="track"></span><span class="knob"></span></label></div>
+    </div></div>`);
+}
+async function saveProvider(id){
+  const b={name:document.getElementById('f-name').value,base_url:document.getElementById('f-url').value,enabled:document.getElementById('f-enabled').checked};
+  const k=document.getElementById('f-key').value; if(k||!id)b.api_key=k;
+  try{if(id)await api('PUT',`/api/providers/${id}`,b);else await api('POST','/api/providers',b);closeModal();toast(id?t('updated'):t('created'));page_providers();}catch(e){toast(e.message);}
+}
+async function deleteProvider(id){if(!confirm(t('confirm_del')))return;try{await api('DELETE',`/api/providers/${id}`);toast(t('deleted'));page_providers();}catch(e){toast(e.message);}}
+async function fetchRemoteModels(pid){
+  toast(t('fetching'));
+  try{
+    const r=await api('GET',`/api/providers/${pid}/fetch_models`);
+    if(!r.ok||!r.models.length){toast(t('noData'));return;}
+    const ex=new Set((await api('GET','/api/models')).map(m=>m.model_id));
+    showModal(`<div class="modal-bar"><h3>${t('fetch_models')}</h3><button onclick="importModels(${pid})">${t('import_sel')}</button></div>
+      <div class="modal-body"><div class="flex items-center gap-2 mb-3"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="fetch-all" style="width:18px;height:18px;accent-color:var(--primary)" onchange="document.querySelectorAll('.fcb').forEach(c=>{if(!c.disabled)c.checked=this.checked})"><span class="text-sm">${t('select_all')}</span></label><span class="text-sm text-muted">${r.models.length} ${t('models')}</span></div>
+      <div class="fetch-list">${r.models.map(m=>`<div class="fetch-row"><input type="checkbox" class="fcb" value="${esc(m.id)}" ${ex.has(m.id)?'disabled':''}><span class="truncate" style="flex:1">${esc(m.id)}</span>${ex.has(m.id)?`<span class="tag tag-blue">${t('already_added')}</span>`:''}</div>`).join('')}</div></div>`);
+  }catch(e){toast(e.message);}
+}
+async function importModels(pid){
+  const cbs=document.querySelectorAll('.fcb:checked:not(:disabled)');if(!cbs.length)return;let n=0;
+  for(const c of cbs){try{await api('POST','/api/models',{provider_id:pid,model_id:c.value,name:c.value});n++;}catch(e){}}
+  closeModal();toast(`${t('imported')} (${n})`);page_providers();
+}
+
+// ========== MODELS ==========
+async function page_models(){
+  const a=document.getElementById('app');
+  a.innerHTML=`<div class="page-title">${t('models')}</div><p class="text-muted">${t('loading')}</p>`;
+  try{
+    const d=await api('GET','/api/models');
+    a.innerHTML=`<div class="flex items-center justify-between mb-4"><div class="page-title" style="margin:0">${t('models')}</div><button class="btn btn-primary btn-round btn-sm" onclick="showModelForm()">+ ${t('add')}</button></div>
+      <div class="group">${d.length?d.map(m=>`<div class="list-item" onclick="showModelActions(${m.id})" style="cursor:pointer">
+        <div class="list-info"><div class="list-title">${esc(m.name)}</div><div class="list-sub">${esc(m.model_id)} · ${esc(m.provider_name)}</div></div>
+        <div class="list-right">
+          ${m.has_vision?'<span class="tag tag-blue">👁</span>':''}
+          ${m.auto_disabled?`<span class="tag tag-orange">${t('auto_disabled')}</span>`:m.enabled?`<span class="tag tag-green">${t('active')}</span>`:`<span class="tag tag-red">${t('disabled')}</span>`}
+        </div></div>`).join(''):`<div class="list-item text-center w-full"><span class="text-muted">${t('noData')}</span></div>`}</div>`;
+  }catch(e){a.innerHTML=`<div class="page-title">${t('models')}</div><p class="text-muted">${esc(e.message)}</p>`;}
+}
+function showModelActions(id){
+  showModal(`<div class="modal-bar"><h3>${t('actions')}</h3><button onclick="closeModal()">${t('cancel')}</button></div>
+    <div class="modal-body"><div class="group">
+      <div class="list-item" style="cursor:pointer" onclick="closeModal();testModel(${id})"><span>${t('test')}</span></div>
+      <div class="list-item" style="cursor:pointer" onclick="closeModal();showModelForm(${id})"><span>${t('edit')}</span></div>
+      <div class="list-item" style="cursor:pointer;color:var(--danger)" onclick="closeModal();deleteModel(${id})"><span>${t('del')}</span></div>
+    </div></div>`);
+}
+async function showModelForm(id){
+  const prs=await api('GET','/api/providers');
+  let m={provider_id:prs[0]?.id||0,model_id:'',name:'',has_vision:false,enabled:true};
+  if(id){const all=await api('GET','/api/models');m=all.find(x=>x.id===id)||m;}
+  showModal(`<div class="modal-bar"><h3>${id?t('edit'):t('add')}${t('models')}</h3><button onclick="saveModel(${id||'null'})">${t('save')}</button></div>
+    <div class="modal-body"><div class="group">
+      <div class="group-row"><span class="group-label">${t('providers')}</span><div class="group-value"><select id="f-prov">${prs.map(p=>`<option value="${p.id}"${p.id===m.provider_id?' selected':''}>${esc(p.name)}</option>`).join('')}</select></div></div>
+      <div class="group-row"><span class="group-label">${t('model_id')}</span><div class="group-value"><input id="f-mid" value="${esc(m.model_id)}" placeholder="gpt-4o"></div></div>
+      <div class="group-row"><span class="group-label">${t('display_name')}</span><div class="group-value"><input id="f-mn" value="${esc(m.name)}" placeholder="GPT4o"></div></div>
+      <div class="group-row"><span class="group-label">${t('vision')}</span><label class="ios-toggle"><input type="checkbox" id="f-vis" ${m.has_vision?'checked':''}><span class="track"></span><span class="knob"></span></label></div>
+      <div class="group-row"><span class="group-label">${t('enabled')}</span><label class="ios-toggle"><input type="checkbox" id="f-men" ${m.enabled?'checked':''}><span class="track"></span><span class="knob"></span></label></div>
+    </div></div>`);
+}
+async function saveModel(id){
+  const b={provider_id:+document.getElementById('f-prov').value,model_id:document.getElementById('f-mid').value,name:document.getElementById('f-mn').value,has_vision:document.getElementById('f-vis').checked,enabled:document.getElementById('f-men').checked};
+  try{if(id)await api('PUT',`/api/models/${id}`,b);else await api('POST','/api/models',b);closeModal();toast(id?t('updated'):t('created'));page_models();}catch(e){toast(e.message);}
+}
+async function testModel(id){toast(t('testing'));try{const r=await api('POST',`/api/models/${id}/test`);toast(r.ok?t('test_ok'):t('test_fail')+': '+r.message);}catch(e){toast(e.message);}}
+async function deleteModel(id){if(!confirm(t('confirm_del')))return;try{await api('DELETE',`/api/models/${id}`);toast(t('deleted'));page_models();}catch(e){toast(e.message);}}
+
+// ========== GROUPS ==========
+async function page_groups(){
+  const a=document.getElementById('app');
+  a.innerHTML=`<div class="page-title">${t('groups')}</div><p class="text-muted">${t('loading')}</p>`;
+  try{
+    const d=await api('GET','/api/groups');
+    a.innerHTML=`<div class="flex items-center justify-between mb-4"><div class="page-title" style="margin:0">${t('groups')}</div><button class="btn btn-primary btn-round btn-sm" onclick="showGroupForm()">+ ${t('add')}</button></div>
+      ${d.map(g=>`<div class="group"><div class="group-header"><span>${esc(g.name)}</span>
+        ${g.is_default?` · <span style="color:var(--primary)">${t('default_tag')}</span>`:''}
+        · <span>${t(g.polling_order==='sequential'?'seq':'rand')}</span>
+        ${g.description?` · ${esc(g.description)}`:''}
+      </div>
+      ${g.models.map(m=>`<div class="list-item"><div class="list-info"><div class="list-title">${esc(m.model_name)}</div><div class="list-sub">${esc(m.model_model_id)}</div></div><div class="list-right"><input type="number" min="0" value="${m.weight}" style="width:56px;text-align:center;background:var(--card-secondary);border:1px solid var(--sep);border-radius:8px;padding:4px;font-size:14px;color:var(--text)" onchange="updW(${g.id},${m.model_id},this.value)"><button class="btn btn-sm btn-danger-tint" onclick="rmGM(${g.id},${m.model_id})">${t('remove')}</button></div></div>`).join('')}
+      <div class="list-item flex gap-2">
+        <button class="btn btn-sm btn-tint" onclick="showAddGM(${g.id})">${t('add_model')}</button>
+        <button class="btn btn-sm btn-ghost" onclick="showGroupForm(${g.id})">${t('edit')}</button>
+        ${!g.is_default?`<button class="btn btn-sm btn-danger-tint" onclick="delGroup(${g.id})">${t('del')}</button>`:''}
+      </div></div>`).join('')}`;
+  }catch(e){a.innerHTML=`<div class="page-title">${t('groups')}</div><p class="text-muted">${esc(e.message)}</p>`;}
+}
+async function showGroupForm(id){
+  let g={name:'',description:'',polling_order:'sequential'};
+  if(id){const all=await api('GET','/api/groups');g=all.find(x=>x.id===id)||g;}
+  showModal(`<div class="modal-bar"><h3>${id?t('edit'):t('add')}${t('groups')}</h3><button onclick="saveGroup(${id||'null'})">${t('save')}</button></div>
+    <div class="modal-body"><div class="group">
+      <div class="group-row"><span class="group-label">${t('name')}</span><div class="group-value"><input id="f-gn" value="${esc(g.name)}"></div></div>
+      <div class="group-row"><span class="group-label">${t('desc')}</span><div class="group-value"><input id="f-gd" value="${esc(g.description||'')}"></div></div>
+      <div class="group-row"><span class="group-label">${t('polling')}</span><div class="group-value"><select id="f-gp"><option value="sequential"${g.polling_order==='sequential'?' selected':''}>${t('seq')}</option><option value="random"${g.polling_order==='random'?' selected':''}>${t('rand')}</option></select></div></div>
+    </div></div>`);
+}
+async function saveGroup(id){
+  const b={name:document.getElementById('f-gn').value,description:document.getElementById('f-gd').value||null,polling_order:document.getElementById('f-gp').value};
+  try{if(id)await api('PUT',`/api/groups/${id}`,b);else await api('POST','/api/groups',b);closeModal();toast(id?t('updated'):t('created'));page_groups();}catch(e){toast(e.message);}
+}
+async function delGroup(id){if(!confirm(t('confirm_del')))return;try{await api('DELETE',`/api/groups/${id}`);toast(t('deleted'));page_groups();}catch(e){toast(e.message);}}
+async function showAddGM(gid){
+  const ms=await api('GET','/api/models');
+  showModal(`<div class="modal-bar"><h3>${t('add_model')}</h3><button onclick="addGM(${gid})">${t('add')}</button></div>
+    <div class="modal-body"><div class="group">
+      <div class="group-row"><span class="group-label">${t('models')}</span><div class="group-value"><select id="f-am">${ms.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('')}</select></div></div>
+      <div class="group-row"><span class="group-label">${t('weight')}</span><div class="group-value"><input id="f-aw" type="number" min="0" value="1"></div></div>
+    </div></div>`);
+}
+async function addGM(gid){try{await api('POST',`/api/groups/${gid}/models`,{model_id:+document.getElementById('f-am').value,weight:+document.getElementById('f-aw').value});closeModal();toast(t('added'));page_groups();}catch(e){toast(e.message);}}
+async function updW(gid,mid,v){try{await api('PUT',`/api/groups/${gid}/models/${mid}`,{weight:+v});}catch(e){toast(e.message);}}
+async function rmGM(gid,mid){if(!confirm(t('confirm_del')))return;try{await api('DELETE',`/api/groups/${gid}/models/${mid}`);toast(t('removed'));page_groups();}catch(e){toast(e.message);}}
+
+// ========== SETTINGS ==========
+async function page_settings(){
+  const a=document.getElementById('app');
+  a.innerHTML=`<div class="page-title">${t('settings')}</div><p class="text-muted">${t('loading')}</p>`;
+  try{
+    const s=await api('GET','/api/settings');
+    const ms=await api('GET','/api/models');
+    a.innerHTML=`<div class="page-title">${t('settings')}</div>
+      <div class="group"><div class="group-header">${t('smart_routing')}</div>
+        <div class="group-row"><span class="group-label">${t('smart_routing')}</span><label class="ios-toggle"><input type="checkbox" id="s-rt" ${s.smart_routing_enabled?'checked':''}><span class="track"></span><span class="knob"></span></label></div>
+        <div class="group-row"><span class="group-label">${t('route_model')}</span><div class="group-value"><select id="s-rm"><option value="">${t('none_')}</option>${ms.map(m=>`<option value="${m.id}"${s.routing_model_id===m.id?' selected':''}>${esc(m.name)}</option>`).join('')}</select></div></div>
+        <div class="group-row"><span class="group-label">${t('ctx_turns')}</span><div class="group-value"><input type="number" id="s-ct" value="${s.routing_context_turns}" min="1" max="20"></div></div>
+      </div>
+      <div class="group"><div class="group-header">${t('timeout')}</div>
+        <div class="group-row"><span class="group-label">${t('timeout')}</span><div class="group-value"><input type="number" id="s-to" value="${s.timeout_s}" min="1"></div></div>
+        <div class="group-row"><span class="group-label">${t('timeout_action')}</span><div class="group-value"><select id="s-ta"><option value="error"${s.timeout_action==='error'?' selected':''}>${t('act_error')}</option><option value="retry"${s.timeout_action==='retry'?' selected':''}>${t('act_retry')}</option><option value="next"${s.timeout_action==='next'?' selected':''}>${t('act_next')}</option></select></div></div>
+      </div>
+      <div class="group"><div class="group-header">${t('auto_disabled')}</div>
+        <div class="group-row"><span class="group-label">${t('fail_threshold')}</span><div class="group-value"><input type="number" id="s-ft" value="${s.auto_disable_threshold}" min="1"></div></div>
+        <div class="group-row"><span class="group-label">${t('disable_dur')}</span><div class="group-value"><input type="number" id="s-dd" value="${s.auto_disable_duration_min}" min="1"></div></div>
+      </div>
+      <div class="group"><div class="group-header">${t('pin_consume')}</div>
+        <div class="group-row"><span class="group-label">${t('pin_consume')}</span><label class="ios-toggle"><input type="checkbox" id="s-pc" ${s.pin_model_consume_turn?'checked':''}><span class="track"></span><span class="knob"></span></label></div>
+      </div>
+      <div class="group"><div class="group-header">${t('api_keys')}</div>
+        <div id="keys-box">${s.router_api_keys.map((k,i)=>`<div class="group-row"><span class="group-value font-mono" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis">${esc(k)}</span><button class="btn btn-sm btn-danger-tint" onclick="rmKey(${i})">${t('remove')}</button></div>`).join('')}</div>
+        <div class="group-row"><button class="btn btn-sm btn-tint" onclick="addKey()">${t('add_key')}</button></div>
+      </div>
+      <button class="btn btn-primary btn-block btn-round mt-4" onclick="saveSt()">${t('save_settings')}</button>`;
+    window._keys=[...s.router_api_keys];
+  }catch(e){a.innerHTML=`<div class="page-title">${t('settings')}</div><p class="text-muted">${esc(e.message)}</p>`;}
+}
+function addKey(){const k='sk-'+crypto.randomUUID().replace(/-/g,'');window._keys.push(k);refreshKeys();}
+function rmKey(i){window._keys.splice(i,1);refreshKeys();}
+function refreshKeys(){
+  document.getElementById('keys-box').innerHTML=window._keys.map((k,i)=>`<div class="group-row"><span class="group-value font-mono" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis">${esc(k)}</span><button class="btn btn-sm btn-danger-tint" onclick="rmKey(${i})">${t('remove')}</button></div>`).join('');
+}
+async function saveSt(){
+  const b={smart_routing_enabled:document.getElementById('s-rt').checked,routing_model_id:+document.getElementById('s-rm').value||null,routing_context_turns:+document.getElementById('s-ct').value,timeout_s:+document.getElementById('s-to').value,timeout_action:document.getElementById('s-ta').value,auto_disable_threshold:+document.getElementById('s-ft').value,auto_disable_duration_min:+document.getElementById('s-dd').value,pin_model_consume_turn:document.getElementById('s-pc').checked,router_api_keys:window._keys};
+  try{await api('PUT','/api/settings',b);toast(t('saved'));}catch(e){toast(e.message);}
+}
+
+// ========== LOGS ==========
+let lp=1,ll='',le='';
+async function page_logs(){
+  const a=document.getElementById('app');
+  a.innerHTML=`<div class="page-title">${t('logs')}</div><p class="text-muted">${t('loading')}</p>`;
+  try{
+    let u=`/api/logs?page=${lp}&page_size=30`;if(ll)u+=`&level=${ll}`;if(le)u+=`&event=${le}`;
+    const d=await api('GET',u);const tp=Math.ceil(d.total/d.page_size)||1;
+    const levelColor={error:'tag-red',warning:'tag-orange',info:'tag-blue'};
+    a.innerHTML=`<div class="flex items-center justify-between mb-4 wrap gap-2"><div class="page-title" style="margin:0">${t('logs')}</div>
+      <div class="flex gap-2 wrap">
+        <select onchange="ll=this.value;lp=1;page_logs()" style="padding:6px 12px;border-radius:10px;border:1px solid var(--sep);background:var(--card);color:var(--text);font-size:13px">
+          <option value="">${t('all_levels')}</option><option value="info"${ll==='info'?' selected':''}>Info</option><option value="warning"${ll==='warning'?' selected':''}>Warning</option><option value="error"${ll==='error'?' selected':''}>Error</option></select>
+        <select onchange="le=this.value;lp=1;page_logs()" style="padding:6px 12px;border-radius:10px;border:1px solid var(--sep);background:var(--card);color:var(--text);font-size:13px">
+          <option value="">${t('all_events')}</option><option value="request"${le==='request'?' selected':''}>Request</option><option value="timeout"${le==='timeout'?' selected':''}>Timeout</option><option value="retry"${le==='retry'?' selected':''}>Retry</option><option value="error"${le==='error'?' selected':''}>Error</option><option value="routing"${le==='routing'?' selected':''}>Routing</option></select>
+      </div></div>
+      <div class="group">${d.items.length?d.items.map(l=>`<div class="list-item"><div class="list-info"><div class="flex items-center gap-2"><span class="tag ${levelColor[l.level]||'tag-blue'}">${l.level}</span><span class="text-sm text-muted">${l.event}</span></div><div class="list-sub mt-2">${esc(l.message)}</div></div><span class="text-sm text-muted" style="white-space:nowrap">${new Date(l.timestamp).toLocaleString()}</span></div>`).join(''):`<div class="list-item text-center w-full"><span class="text-muted">${t('noData')}</span></div>`}</div>
+      <div class="pager"><button onclick="lp=Math.max(1,lp-1);page_logs()"${lp<=1?' disabled':''}>${t('prev')}</button><span>${lp} / ${tp}</span><button onclick="lp=Math.min(${tp},lp+1);page_logs()"${lp>=tp?' disabled':''}>${t('next_p')}</button></div>`;
+  }catch(e){a.innerHTML=`<div class="page-title">${t('logs')}</div><p class="text-muted">${esc(e.message)}</p>`;}
+}
+
+// ========== INIT ==========
+applyTheme(); buildNav(); navigate('dashboard');
+</script>
+</body>
+</html>
